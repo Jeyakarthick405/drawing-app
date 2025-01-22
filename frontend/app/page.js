@@ -2,6 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  Slider,
+  Button,
+  TextField,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import { ChromePicker } from "react-color";
 
 export default function Home() {
   const canvasRef = useRef(null);
@@ -10,10 +22,10 @@ export default function Home() {
   const [brushColor, setBrushColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(5);
   const [notifications, setNotifications] = useState([]);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const socketRef = useRef(null);
 
   useEffect(() => {
-
     socketRef.current = io("http://localhost:8000");
 
     const canvas = canvasRef.current;
@@ -91,56 +103,77 @@ export default function Home() {
     }, 5000);
   };
 
+  const handleOpenColorMenu = () => {
+    setColorPickerOpen(true);
+  };
+
+  const handleColorChange = (color) => {
+    setBrushColor(color.hex);
+    setColorPickerOpen(false);
+  };
+
   return (
-    <div>
-      <div style={{ textAlign: "center", margin: "10px" }}>
-        <label htmlFor="color">Brush Color:</label>
-        <input
-          type="color"
-          id="color"
-          value={brushColor}
-          onChange={(e) => setBrushColor(e.target.value)}
-        />
-        <label htmlFor="size">Brush Size:</label>
-        <input
-          type="range"
-          id="size"
-          min="1"
-          max="10"
+    <Box>
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Collaborative Drawing App
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
+        <Button
+          variant="contained"
+          onClick={handleOpenColorMenu}
+        >
+          Brush Color
+        </Button>
+
+        <Typography ml={6}>Brush Size</Typography>
+        <Slider
           value={brushSize}
-          onChange={(e) => setBrushSize(e.target.value)}
+          onChange={(e, newValue) => setBrushSize(newValue)}
+          min={1}
+          max={20}
+          sx={{ width: 200, marginLeft: 2 }}
         />
-        <button onClick={handleReset}>Reset Canvas</button>
-      </div>
-      <div style={{ position: "absolute", top: "10px", right: "10px" }}>
-        {notifications.map((notif, index) => (
-          <div
-            key={index}
-            style={{
-              background: "#f8f9fa",
-              border: "1px solid #dee2e6",
-              padding: "10px",
-              margin: "5px",
-              borderRadius: "5px",
-              boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            {notif}
-          </div>
-        ))}
-      </div>
-      <canvas
-        ref={canvasRef}
-        style={{
-          border: "1px solid black",
-          display: "block",
-          margin: "20px auto",
-        }}
-        onMouseDown={startDrawing}
-        onMouseUp={stopDrawing}
-        onMouseOut={stopDrawing}
-        onMouseMove={draw}
-      ></canvas>
-    </div>
+        <Button variant="contained" color="error" onClick={handleReset} sx={{ marginLeft: 6 }}>
+          Reset Canvas
+        </Button>
+      </Box>
+
+      {colorPickerOpen && (
+        <Box sx={{ position: "absolute", top: "45%", left: "30%", transform: "translate(-50%, -50%)", zIndex: 9999 }}>
+          <ChromePicker color={brushColor} onChange={handleColorChange} />
+        </Box>
+      )}
+
+      <Box display="flex" justifyContent="center" mt={4}>
+        <canvas
+          ref={canvasRef}
+          style={{
+            border: "2px solid #000",
+            borderRadius: "8px",
+          }}
+          onMouseDown={startDrawing}
+          onMouseUp={stopDrawing}
+          onMouseOut={stopDrawing}
+          onMouseMove={draw}
+        ></canvas>
+      </Box>
+
+      {notifications.map((notif, index) => (
+        <Snackbar
+          key={index}
+          open
+          autoHideDuration={5000}
+          onClose={() => setNotifications((prev) => prev.filter((_, i) => i !== index))}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <Alert severity="info">{notif}</Alert>
+        </Snackbar>
+      ))}
+    </Box>
   );
 }
