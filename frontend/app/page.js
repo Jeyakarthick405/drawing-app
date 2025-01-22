@@ -13,34 +13,26 @@ export default function Home() {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    // Initialize socket connection
+
     socketRef.current = io("http://localhost:8000");
 
-    // Set up canvas context
     const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth * 0.8;
     canvas.height = window.innerHeight * 0.6;
-    const ctx = canvas.getContext("2d");
     ctx.lineCap = "round";
     ctxRef.current = ctx;
 
-    // Listen for draw events from the server
     socketRef.current.on("draw", (data) => drawOnCanvas(data, false));
-
-    // Listen for reset events
     socketRef.current.on("reset", clearCanvas);
-
-    // Listen for user notifications
-    socketRef.current.on("notification", (message) => {
-      addNotification(message);
-    });
-
-    // Listen for stop-drawing events
-    socketRef.current.on("stop-drawing", () => {
-      ctxRef.current.beginPath();
-    });
+    socketRef.current.on("notification", addNotification);
+    socketRef.current.on("stop-drawing", () => ctxRef.current?.beginPath());
 
     return () => {
+      socketRef.current.off("draw");
+      socketRef.current.off("reset");
+      socketRef.current.off("notification");
+      socketRef.current.off("stop-drawing");
       socketRef.current.disconnect();
     };
   }, []);
@@ -52,30 +44,28 @@ export default function Home() {
     drawOnCanvas(data, true);
     socketRef.current.emit("draw", data);
   };
-  
+
   const stopDrawing = () => {
+    if (!ctxRef.current) return;
     setIsDrawing(false);
-    socketRef.current.emit("draw", { isDrawing: false }); // Notify other users to stop drawing
+    socketRef.current.emit("draw", { isDrawing: false });
     ctxRef.current.beginPath();
   };
-  
+
   const draw = ({ nativeEvent }) => {
-    if (!isDrawing) return;
-  
+    if (!isDrawing || !ctxRef.current) return;
     const { offsetX, offsetY } = nativeEvent;
     const data = { x: offsetX, y: offsetY, color: brushColor, size: brushSize, isDrawing: true };
     drawOnCanvas(data, true);
     socketRef.current.emit("draw", data);
   };
-  
+
   const drawOnCanvas = (data, emit) => {
     const { x, y, color, size, isDrawing } = data;
-  
-    if (!isDrawing) {
-      ctxRef.current.beginPath(); // Reset path if not drawing
+    if (!isDrawing || !ctxRef.current) {
+      ctxRef.current?.beginPath();
       return;
     }
-  
     ctxRef.current.strokeStyle = color;
     ctxRef.current.lineWidth = size;
     ctxRef.current.lineTo(x, y);
@@ -83,11 +73,10 @@ export default function Home() {
     ctxRef.current.beginPath();
     ctxRef.current.moveTo(x, y);
   };
-  
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
-    ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
+    ctxRef.current?.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   const handleReset = () => {
@@ -97,8 +86,6 @@ export default function Home() {
 
   const addNotification = (message) => {
     setNotifications((prev) => [...prev, message]);
-
-    // Remove the notification after 5 seconds
     setTimeout(() => {
       setNotifications((prev) => prev.filter((notif) => notif !== message));
     }, 5000);
@@ -125,7 +112,6 @@ export default function Home() {
         />
         <button onClick={handleReset}>Reset Canvas</button>
       </div>
-
       <div style={{ position: "absolute", top: "10px", right: "10px" }}>
         {notifications.map((notif, index) => (
           <div
@@ -143,7 +129,6 @@ export default function Home() {
           </div>
         ))}
       </div>
-
       <canvas
         ref={canvasRef}
         style={{
