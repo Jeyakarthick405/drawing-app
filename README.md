@@ -4,6 +4,8 @@ Welcome to the Real-Time Collaborative Drawing App! This application allows mult
 
 In this project, the backend is built using **Node.js** with WebSocket support, while the frontend uses **Next.js**.
 
+![drawing-app](https://github.com/user-attachments/assets/cd64dd31-7157-4999-b4c6-8d8dda97f642)
+
 ## Features
 
 - **Live Drawing Sync**: All users connected to the app can see drawing updates in real time.
@@ -16,7 +18,7 @@ In this project, the backend is built using **Node.js** with WebSocket support, 
 ## Technologies Used
 
 - **Backend**: Node.js, Socket.IO, Express.js
-- **Frontend**: Next.js, HTML5, CSS3
+- **Frontend**: Next.js, Material UI, HTML5, CSS3
 - **Communication**: WebSocket via Socket.IO for real-time updates
 
 ## Installation
